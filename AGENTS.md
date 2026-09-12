@@ -73,8 +73,9 @@ the short SHA (`20260912-153045-e9d9354`) and lexicographic order is
 chronological order. **Pin deployments to a digest or a timestamp tag, never to
 `latest` or `main`** — those two move under a running deployment.
 
-`deploy/` still holds the SSH/systemd scripts from the single-box setup. Nothing
-in CI calls them any more.
+There is no host-level deployment in this repo any more — no systemd unit, no
+Caddyfile, no update script. The container is the unit of deployment, and
+whatever runs it owns the TLS and the restarts.
 
 ## Invariants — do not break these
 
