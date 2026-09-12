@@ -9,11 +9,11 @@ import { existsSync } from 'node:fs';
  * them would arrive too late.
  *
  * dotenv does not overwrite variables that are already set, so precedence runs
- * real environment variables > .env > atlas-credentials.env. The Atlas file is
- * kept separate because that is where Atlas onboarding writes it; it is
- * gitignored, as is .env.
+ * real environment variables > .env > .env.local. That ordering is what lets a
+ * container be configured entirely through its environment with no file at all.
+ * Both files are gitignored.
  */
-const FILES = ['.env', 'atlas-credentials.env', '.env.local'];
+const FILES = ['.env', '.env.local'];
 
 export const loadedEnvFiles: string[] = [];
 for (const file of FILES) {

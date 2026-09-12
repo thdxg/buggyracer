@@ -8,7 +8,7 @@ import type { Run, RunSummary } from '../../../shared/types';
 
 export interface Health {
   ok: boolean;
-  store: 'mongo' | 'file';
+  store: 'file';
   ai: { gemini: boolean; elevenlabs: boolean; geminiModel: string };
   ttsCharsUsed: number;
   ttsCharBudget: number;
