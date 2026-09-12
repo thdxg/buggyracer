@@ -12,24 +12,24 @@ live video is the background of the whole screen.
 ## Run it
 
 ```bash
-npm install
-npm run fetch-assets     # self-hosts MediaPipe wasm + hand model (~18MB, gitignored)
-npm run dev              # client :5173, API :8787
+bun install
+bun run fetch-assets     # self-hosts MediaPipe wasm + hand model (~18MB, gitignored)
+bun run dev              # client :5173, API :8787
 ```
 
-Optional: `npm run seed` (synthetic opponents), `npm run phrases` (regenerate
+Optional: `bun run seed` (synthetic opponents), `bun run phrases` (regenerate
 commentary audio — costs ElevenLabs credits, only if the committed MP3s change).
 
 Verify before pushing:
 
 ```bash
-npm run typecheck
-npm run build
-npm run diag             # the assertions below, in one go
-npm run check:secrets    # the repo is public; see "Secrets"
+bun run typecheck
+bun run build
+bun run diag             # the assertions below, in one go
+bun run check:secrets    # the repo is public; see "Secrets"
 ```
 
-`npm run diag` runs, in order:
+`bun run diag` runs, in order:
 
 | Script | Asserts |
 |---|---|
@@ -40,8 +40,8 @@ npm run check:secrets    # the repo is public; see "Secrets"
 | `diag/recorder.ts` | ghost sampling rate — **prints only, does not fail** |
 
 GitHub Actions runs exactly this list on pull requests and on pushes to `main`
-(`.github/workflows/ci.yml`), so a missed local run is caught. Node version
-comes from `.nvmrc` in both places — keep the two in step.
+(`.github/workflows/ci.yml`), so a missed local run is caught. The Bun version
+comes from `.bun-version` in CI and in the image — keep those in step.
 
 ## Container and release
 
@@ -168,8 +168,17 @@ scripts/diag/  assertions about physics and geometry
   The commentator persona therefore applies to live lines only - regenerating the
   54-phrase bank per persona would cost about a thousand credits each. `hype` is
   the default because the bank was synthesised in that register.
-- **Node ESM needs explicit `.js` extensions** in relative imports. `tsx` papers
-  over this in dev and it only fails in the production build.
+- **Bun is the package manager and the runtime.** Use `bun install` and
+  `bun <file>.ts`; the lockfile is `bun.lock` and the image carries no `node`
+  binary. Anything that shells out to a Node CLI (Vite, `tsc`) goes through
+  `bunx --bun` so it runs on Bun rather than looking for a Node that is not
+  there.
+- **Only the client is compiled.** Bun runs `server/src/index.ts` from source in
+  dev and in the image alike, so `dist/` holds the Vite output and nothing else.
+  That is why the server resolves the static client as `../../dist/client`
+  rather than as a sibling — move the entrypoint and that path moves with it.
+  Relative imports keep their `.js` extensions (Bun resolves those to the `.ts`
+  files) so the tree stays valid TypeScript either way.
 
 ## Secrets
 

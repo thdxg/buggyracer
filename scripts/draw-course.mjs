@@ -1,10 +1,10 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
  * Draws a gentle point-to-point course. Nothing is surveyed here: the shape is
  * a formula, because the easy course has to be easy by construction and no real
  * road is.
  *
- *   node scripts/draw-course.mjs --id shakedown --name "Shakedown Run"
+ *   bun scripts/draw-course.mjs --id shakedown --name "Shakedown Run"
  *
  * The shape is a long arc with a sine meander laid along its normal. Both sines
  * start and finish at a zero crossing, where a sine has no curvature, so the

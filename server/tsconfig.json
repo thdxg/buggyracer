@@ -2,10 +2,11 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2022"],
-    "types": ["node"],
-    "outDir": "../dist",
-    "rootDir": "..",
-    "noEmit": false
+    // Bun's types cover the node: builtins this server uses as well as Bun's
+    // own globals, so there is no separate @types/node here.
+    "types": ["bun"],
+    // Bun runs the TypeScript directly; this project only ever typechecks.
+    "noEmit": true
   },
   "include": ["src", "../shared"]
 }

@@ -17,7 +17,7 @@ mkdirSync(wasmDst, { recursive: true });
 mkdirSync(dirname(modelDst), { recursive: true });
 
 if (!existsSync(wasmSrc)) {
-  console.error('! @mediapipe/tasks-vision wasm folder missing - run npm install first');
+  console.error('! @mediapipe/tasks-vision wasm folder missing - run bun install first');
   process.exit(1);
 }
 for (const f of readdirSync(wasmSrc)) {

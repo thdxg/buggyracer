@@ -23,16 +23,23 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # First, and before installing anything: the repo is public, so a
-      # committed key is the one failure that cannot be undone by a revert.
-      - run: node scripts/check-secrets.mjs
-
-      - uses: actions/setup-node@v7
+      # Only the Bun binary; nothing from the lockfile yet.
+      - uses: oven-sh/setup-bun@v2
         with:
-          node-version-file: .nvmrc
-          cache: npm
+          bun-version-file: .bun-version
 
-      - run: npm ci
+      # First, and before any dependency is installed: the repo is public, so a
+      # committed key is the one failure that cannot be undone by a revert.
+      - run: bun scripts/check-secrets.mjs
+
+      - name: Cache Bun install cache
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - run: bun install --frozen-lockfile
 
       # The hand landmarker is ~9MB from a Google CDN at a pinned revision, so
       # it never changes under a given key. fetch-assets skips the download when
@@ -43,7 +50,7 @@ jobs:
           path: client/public/models/hand_landmarker.task
           key: mediapipe-model-${{ hashFiles('scripts/fetch-mediapipe-assets.mjs') }}
 
-      - run: npm run fetch-assets
-      - run: npm run typecheck
-      - run: npm run build
-      - run: npm run diag
+      - run: bun run fetch-assets
+      - run: bun run typecheck
+      - run: bun run build
+      - run: bun run diag

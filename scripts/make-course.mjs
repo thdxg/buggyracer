@@ -1,11 +1,11 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
  * Builds a bundled course from a closed OpenStreetMap way (a park perimeter,
  * a plaza, a lake shore). Closed ways are used rather than road-graph loops
  * because they are already simple closed curves - no cycle search, no
  * self-intersection to reject.
  *
- *   node scripts/make-course.mjs --id garden --name "Public Garden" \
+ *   bun scripts/make-course.mjs --id garden --name "Public Garden" \
  *     --bbox 42.348,-71.076,42.362,-71.056 --way "Boston Public Garden"
  *
  * Coordinates are metres centred on origin, matching the surveyed Buggy Course.

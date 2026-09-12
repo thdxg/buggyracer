@@ -17,9 +17,9 @@ races stay close instead of ending in the first corner.
 ## Quick start
 
 ```bash
-npm install
-npm run fetch-assets     # self-hosts the MediaPipe wasm + hand model (~18MB)
-npm run dev              # client on :5173, API on :8787
+bun install
+bun run fetch-assets     # self-hosts the MediaPipe wasm + hand model (~18MB)
+bun run dev              # client on :5173, API on :8787
 ```
 
 Open <http://localhost:5173>. `localhost` counts as a secure context, so the
@@ -28,8 +28,8 @@ camera works without TLS locally. Anywhere else needs real HTTPS.
 Optional, but worth doing before a demo:
 
 ```bash
-npm run seed             # 24 synthetic opponents so matchmaking has a field
-npm run phrases          # pre-generates the commentary audio (needs an ElevenLabs key)
+bun run seed             # 24 synthetic opponents so matchmaking has a field
+bun run phrases          # pre-generates the commentary audio (needs an ElevenLabs key)
 ```
 
 ### Keys
@@ -99,8 +99,8 @@ There is no brake, so a corner tighter than the car's minimum turn radius is
 impossible to take, not merely hard. After editing the track, check it:
 
 ```bash
-npm run track:info                     # length, sectors, obstacle count
-npx tsx scripts/diag/curvature.ts      # tightest corner vs the car's turn radius
+bun run track:info                     # length, sectors, obstacle count
+bun scripts/diag/curvature.ts          # tightest corner vs the car's turn radius
 ```
 
 Keep the ratio above roughly 2x. The shipped track is 2.11x. An earlier version
@@ -221,7 +221,7 @@ anything.
     -H 'content-type: application/json' \
     -d '{"trackId":"circuit-01","keepSynthetic":true}'
   ```
-  Note `npm run seed` *adds* to the field rather than replacing it.
+  Note `bun run seed` *adds* to the field rather than replacing it.
 
 ## Credits
 

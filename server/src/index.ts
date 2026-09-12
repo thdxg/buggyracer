@@ -216,11 +216,14 @@ app.post('/api/reset', asyncRoute(async (req, res) => {
 }));
 
 // --- Static client (production) --------------------------------------------
-const clientDir = join(here, '../../client');
+// Bun runs this file from source, so `here` is server/src both in dev and in
+// the image - there is no compiled copy sitting next to the built client any
+// more. Point at Vite's output explicitly rather than at a sibling directory.
+const clientDir = join(here, '../../dist/client');
 app.use(express.static(clientDir, { maxAge: '1h' }));
 app.get(/^(?!\/api\/).*/, (_req, res) => {
   res.sendFile(join(clientDir, 'index.html'), (err) => {
-    if (err) res.status(404).send('client not built - run npm run build');
+    if (err) res.status(404).send('client not built - run bun run build');
   });
 });
 

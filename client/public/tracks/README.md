@@ -37,7 +37,7 @@ Verification: typecheck, build, and the curvature, knockback, recorder and
 multilap diagnostics. The additional diagnostic checks late/backward ghost
 seeks, finish ordering, seeded layouts, sections, elevation and lap events.
 
-`npm run seed` generates 24 deterministic opponents. Optional
+`bun run seed` generates 24 deterministic opponents. Optional
 `SEED_DRY_RUN=1` skips upload; `SEED_OUTPUT=/tmp/field.json` saves the generated
 field. Failed finishes, collision-heavy drivers and implausibly slow runs are
 rejected. Local integration seeding uses port 18787 with file store
