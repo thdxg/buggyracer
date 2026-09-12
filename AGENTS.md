@@ -39,20 +39,42 @@ npm run check:secrets    # the repo is public; see "Secrets"
 | `diag/multilap.ts` | lap sequencing, ghost seeks, standings, events |
 | `diag/recorder.ts` | ghost sampling rate — **prints only, does not fail** |
 
-`diag/atlas-usage.ts` is excluded: it needs `MONGODB_URI` and reports storage
-against the M0 limit rather than asserting anything.
-
 GitHub Actions runs exactly this list on pull requests and on pushes to `main`
 (`.github/workflows/ci.yml`), so a missed local run is caught. Node version
 comes from `.nvmrc` in both places — keep the two in step.
 
-**A green merge to `main` deploys itself.** The same workflow SSHes to the box
-and runs `deploy/update.sh` for the commit that just passed. Two things follow:
-a merge is a production change, and a restart drops every connection in flight.
-Deploys already decline while a multiplayer room is open; to stop them for
-longer, `sudo touch /opt/ghostrace/DEPLOY_HOLD` on the box — CI then goes green
-with a warning instead of deploying. Setup and
-the other switches are in `deploy/README.md` section 8.
+## Container and release
+
+```bash
+docker build -t buggyrace .
+docker run --rm -p 8787:8787 -v buggyrace-data:/data buggyrace
+```
+
+One image serves the API, the WebSocket relay and the built client from one
+port, so there is no second process and no front-end web server to configure.
+
+**Every paid integration is off unless you switch it on.** The image bakes in no
+key and `.dockerignore` keeps `.env` out of the build context entirely, so
+Gemini and ElevenLabs both report unconfigured and commentary falls back to the
+committed phrase bank — which is the primary path anyway. Pass `GEMINI_API_KEY`
+or `ELEVENLABS_API_KEY` to the container to turn either back on.
+`.github/workflows/docker.yml` asserts both are off in the built image, so a key
+that reaches it through a build arg or a stray file turns the build red instead
+of the image quietly starting to bill.
+
+The file store writes to `DATA_FILE`, which the image points at `/data` rather
+than the working directory — mount a volume there or leaderboards die with the
+container.
+
+**A green merge to `main` publishes an image, and stops.** It does not touch the
+cluster; Flux pulls. The tag convention exists for that handover: Flux sorts
+tags as strings, so builds off `main` carry a zero-padded UTC timestamp ahead of
+the short SHA (`20260912-153045-e9d9354`) and lexicographic order is
+chronological order. **Pin deployments to a digest or a timestamp tag, never to
+`latest` or `main`** — those two move under a running deployment.
+
+`deploy/` still holds the SSH/systemd scripts from the single-box setup. Nothing
+in CI calls them any more.
 
 ## Invariants — do not break these
 
@@ -71,9 +93,11 @@ the other switches are in `deploy/README.md` section 8.
    Only the renderer knows about perspective or 3D. Do not let camera maths into
    game state — ghost data recorded under one camera must replay correctly under
    another.
-5. **Every external dependency fails soft.** No backend, no Atlas, no Gemini, no
+5. **Every external dependency fails soft.** No backend, no Gemini, no
    ElevenLabs, no camera: the game must still be playable. Commentary is an
-   enhancement, never a dependency.
+   enhancement, never a dependency. Storage is the same bargain kept locally —
+   runs live in one JSON file, and a store that cannot be written must not stop
+   a race.
 6. **All gameplay constants live in one block** at the top of
    `client/src/game/physics.ts`. Do not scatter magic numbers.
 7. **Every course is raced the same way.** `TUNING.TRACK_WIDTH` and
@@ -92,7 +116,7 @@ client/src/
   hud/         DOM HUD and results screen
   audio/       commentary (phrase bank + live) and procedural sound effects
   net/         API client — every call fails soft
-server/src/    Express API, Mongo/file store, Gemini + ElevenLabs proxies
+server/src/    Express API, JSON file store, Gemini + ElevenLabs proxies
 shared/        types used by both sides
 scripts/diag/  assertions about physics and geometry
 ```
@@ -137,9 +161,6 @@ scripts/diag/  assertions about physics and geometry
   `50-cloud-init.conf`, not after.
 - **Caddy's systemd unit sandboxes the filesystem** and cannot write
   `/var/log/caddy`. Log to journald.
-- **Atlas rejects unlisted source IPs during the TLS handshake**, so the failure
-  reads as `SSL alert number 80` rather than an auth error. Check Network Access
-  before debugging credentials.
 - **ElevenLabs free tier is ~10,000 credits/month** and Flash bills 0.5 credits
   per character. The pre-generated phrase bank is the primary commentary path;
   live generation is capped per race. Do not make live generation the default.
@@ -151,9 +172,11 @@ scripts/diag/  assertions about physics and geometry
 
 ## Secrets
 
-`.env`, `atlas-credentials.env` and `.env.local` are gitignored and must stay
-that way. The repo is **public**. Never commit a key; `.env.example` documents
-the names only.
+`.env` and `.env.local` are gitignored and must stay that way, as does the
+`*credentials*.env` pattern guarding them. The repo is **public**. Never commit
+a key; `.env.example` documents the names only. `.dockerignore` carries the same
+list, because a build context that sees a key bakes it into a layer that
+survives any later step deleting the file.
 
 ## Conventions
 

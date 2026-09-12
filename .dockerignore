@@ -1,0 +1,26 @@
+# The repo is public and this image is pushed to a public registry, so the rule
+# from AGENTS.md applies twice over here: a key must never enter the build
+# context, because a layer keeps it even after a later step deletes the file.
+.env
+.env.*
+atlas-credentials.env
+*credentials*.env
+
+node_modules/
+dist/
+data/
+.git/
+.github/
+.gitignore
+.claude/
+
+# Fetched inside the build at the revision pinned in the script, so the image
+# never inherits whatever happens to be on the builder's disk.
+client/public/mediapipe/
+client/public/models/*.task
+
+# Host deployment scripts and working notes; nothing the server needs to run.
+deploy/
+todo/
+*.md
+.DS_Store

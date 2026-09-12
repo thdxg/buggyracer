@@ -37,13 +37,13 @@ npm run phrases          # pre-generates the commentary audio (needs an ElevenLa
 Copy `.env.example` to `.env`. Everything is optional - with no keys at all the
 game is fully playable, just without persistence or commentary.
 
-The server loads `.env`, then `atlas-credentials.env` (where Atlas onboarding
-writes its connection string), then `.env.local`. Real environment variables win
-over all of them. All three are gitignored.
+The server loads `.env`, then `.env.local`. Real environment variables win over
+both, which is how the container is configured with no file at all. Both are
+gitignored.
 
 | Key | Effect if missing |
 |---|---|
-| `MONGODB_URI` | Falls back to a local JSON file store |
+| `DATA_FILE` | Runs are written to `data/runs.json` |
 | `GEMINI_API_KEY` | No live commentary text; the cached phrase bank still plays |
 | `ELEVENLABS_API_KEY` + `ELEVENLABS_VOICE_ID` | No new audio; existing cached phrases still play |
 
@@ -133,7 +133,7 @@ client/src/
   render/      windshield projection, scene, wheel overlay, minimap, car sprites
   hud/         DOM HUD and the results screen
   audio/       commentary (phrase bank + live) and procedural sound effects
-server/src/    Express API, Mongo/file store, Gemini + ElevenLabs proxies
+server/src/    Express API, JSON file store, Gemini + ElevenLabs proxies
 shared/        types used by both sides
 ```
 
@@ -199,8 +199,11 @@ anything.
   Cached phrases play instantly either way.
 - **Gemini 3.x rejects `thinkingBudget`.** Use `thinkingLevel`. At `medium` the
   model returns an *empty* string because reasoning consumes the output budget.
-- **There is no browser path to MongoDB Atlas.** The Data API reached end-of-life
-  on 30 September 2025, so the server is required for persistence.
+- **Runs live in one JSON file, not a database.** An Atlas backend used to sit
+  behind the same interface; the Data API reached end-of-life on 30 September
+  2025, so the browser could never reach it anyway, and a leaderboard this size
+  does not need a network hop. Mount a volume at the store's directory or the
+  leaderboard dies with the container.
 - **Ghosts never collide** with anything, including each other. They are purely
   visual, by design.
 

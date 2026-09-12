@@ -12,9 +12,9 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  # Superseded PR pushes are worth cancelling. A run on main is not: it carries
-  # the deploy job, and cancelling that mid-`npm ci` leaves a half-built tree on
-  # the box.
+  # Superseded PR pushes are worth cancelling. A run on main is not: its green
+  # tick is the record that the commit passed, and a cancelled run leaves that
+  # commit with no verdict at all.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -47,66 +47,3 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm run diag
-
-  # Auto-redeploy, gated on verify. Only on a push to main, and it deploys the
-  # exact commit that just passed rather than whatever is at the tip of main by
-  # the time it runs - two merges landing together must not put the second one's
-  # code behind the first one's green tick.
-  #
-  # `environment: production` is the seam for a human gate: adding a required
-  # reviewer to that environment in repo settings turns this into approve-then-
-  # deploy without touching the workflow.
-  deploy:
-    needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    environment: production
-    concurrency:
-      group: deploy-production
-      cancel-in-progress: false
-    steps:
-      - name: Deploy over SSH
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
-        run: |
-          set -euo pipefail
-
-          # Unconfigured is a valid state - the repo is public and a fork has no
-          # box. Skip quietly rather than reddening main over missing secrets.
-          if [ -z "$DEPLOY_HOST" ]; then
-            echo "::notice::DEPLOY_HOST not set - no target configured, skipping deploy."
-            echo "To enable auto-deploy see deploy/README.md section 8."
-            exit 0
-          fi
-          # Half-configured is not a valid state, and silently never deploying is
-          # the worst way to find that out.
-          for v in DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS; do
-            if [ -z "${!v}" ]; then
-              echo "::error::DEPLOY_HOST is set but $v is missing."
-              exit 1
-            fi
-          done
-
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
-          chmod 600 ~/.ssh/id_deploy
-          # Pinned host key, not StrictHostKeyChecking=no: this step carries a key
-          # that can restart the service, so an unverified host is a handout.
-          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
-
-          rc=0
-          ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
-              -o ConnectTimeout=15 -i ~/.ssh/id_deploy \
-              "$DEPLOY_USER@$DEPLOY_HOST" \
-              -- sudo /usr/local/sbin/ghostrace-update main "$GITHUB_SHA" || rc=$?
-
-          # 75 is the script declining on purpose - a DEPLOY_HOLD file, or someone
-          # mid-race. That is the feature working, not a broken build.
-          if [ "$rc" = 75 ]; then
-            echo "::warning::Deploy declined on the box; production is behind main."
-            exit 0
-          fi
-          exit "$rc"

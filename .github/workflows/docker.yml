@@ -1,0 +1,155 @@
+# Builds the container image on every pull request and every push to main, so a
+# change that breaks the image is caught in the same place as one that breaks
+# the app build.
+#
+# This is also the deploy handoff. Nothing here reaches the cluster: a push to
+# main publishes an image to GHCR and stops, and Flux pulls it. That keeps the
+# credential flow one-way - CI can publish, but it holds nothing that can reach
+# the homelab.
+
+name: Docker
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: docker-${{ github.ref }}
+  # Superseded PR pushes are worth cancelling; a run on main publishes the image
+  # the cluster pulls, so let it finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-qemu-action@v4
+
+      - uses: docker/setup-buildx-action@v4
+
+      # Tag convention is shared with thdxg/website, because Flux's image
+      # automation sorts tags as strings: a zero-padded UTC timestamp first
+      # means lexicographic order is chronological order, and the short SHA
+      # after it keeps two builds in the same second distinct. `latest` and
+      # `main` are deliberately not what a cluster pins to - they move under a
+      # running deployment.
+      #
+      # GHCR also rejects an uppercase image name and `github.repository`
+      # carries the owner's real casing, so metadata-action lowercases it rather
+      # than the repository being interpolated straight into a tag.
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,format=short
+            type=raw,value={{date 'YYYYMMDD-HHmmss' tz='UTC'}}-{{sha}},enable={{is_default_branch}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      # Native amd64 only, and loaded rather than pushed: `load` cannot take a
+      # multi-platform result, and the point of this step is to have something
+      # the smoke test can run before anything is published. The push below
+      # rebuilds from this cache.
+      - name: Build for test
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: buggyrace:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # "It compiled" is not the same claim as "it runs": this catches a missing
+      # production dependency, a wrong static path, and an entrypoint that never
+      # comes up - none of which the build itself would notice.
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          docker run -d --name buggyrace -p 8787:8787 buggyrace:ci
+
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8787/api/health -o health.json; then break; fi
+            sleep 2
+          done
+          cat health.json
+
+          test "$(jq -r .ok health.json)" = "true"
+
+          # The paid integrations must report unconfigured. This is the
+          # assertion that keeps them off: if a key ever reaches the image
+          # through a build arg or a stray .env, the build goes red here rather
+          # than the image quietly starting to bill.
+          test "$(jq -r .ai.gemini health.json)" = "false"
+          test "$(jq -r .ai.elevenlabs health.json)" = "false"
+
+          # Runs persist to local disk; there is no other backend to fall into.
+          test "$(jq -r .store health.json)" = "file"
+
+          # The client is served by the same listener, and a build that had
+          # skipped `vite build` would still pass every check above.
+          curl -fsS http://127.0.0.1:8787/ | grep -qi '<title'
+
+          docker rm -f buggyrace
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        id: push
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Generate artifact attestation
+        if: github.event_name != 'pull_request'
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      # The digest is what survives a tag being moved, so it is the useful thing
+      # to read off a finished run.
+      - name: Summary
+        if: github.event_name != 'pull_request'
+        run: |
+          {
+            echo "### Image published"
+            echo '```'
+            echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.push.outputs.digest }}"
+            echo '```'
+            echo "Tags:"
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
