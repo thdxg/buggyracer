@@ -46,8 +46,8 @@ comes from `.bun-version` in CI and in the image — keep those in step.
 ## Container and release
 
 ```bash
-docker build -t buggyrace .
-docker run --rm -p 8787:8787 -v buggyrace-data:/data buggyrace
+docker build -t buggyracer .
+docker run --rm -p 8787:8787 -v buggyracer-data:/data buggyracer
 ```
 
 One image serves the API, the WebSocket relay and the built client from one

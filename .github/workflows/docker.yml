@@ -73,7 +73,7 @@ jobs:
           context: .
           platforms: linux/amd64
           load: true
-          tags: buggyrace:ci
+          tags: buggyracer:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -83,7 +83,7 @@ jobs:
       - name: Smoke test
         run: |
           set -euo pipefail
-          docker run -d --name buggyrace -p 8787:8787 buggyrace:ci
+          docker run -d --name buggyracer -p 8787:8787 buggyracer:ci
 
           for _ in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:8787/api/health -o health.json; then break; fi
@@ -107,7 +107,7 @@ jobs:
           # skipped `vite build` would still pass every check above.
           curl -fsS http://127.0.0.1:8787/ | grep -qi '<title'
 
-          docker rm -f buggyrace
+          docker rm -f buggyracer
 
       - name: Log in to GHCR
         if: github.event_name != 'pull_request'

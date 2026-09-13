@@ -68,7 +68,7 @@ export class LobbyView {
     this.joinBtn = this.el.querySelector('[data-act="join"]')!;
     this.leaveBtn = this.el.querySelector('[data-act="leave"]')!;
 
-    this.roomInput.value = localStorage.getItem('ghostrace.room') ?? '';
+    this.roomInput.value = localStorage.getItem('buggyracer.room') ?? '';
 
     this.el.querySelector('[data-act="join"]')!.addEventListener('click', () => this.submitJoin());
     this.el.querySelector('[data-act="solo"]')!.addEventListener('click', () => this.handlers.onSolo());
@@ -144,7 +144,7 @@ export class LobbyView {
       return;
     }
     this.roomInput.value = room;
-    localStorage.setItem('ghostrace.room', room);
+    localStorage.setItem('buggyracer.room', room);
     this.handlers.onJoin(room);
   }
 

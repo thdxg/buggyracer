@@ -235,8 +235,8 @@ createStore().then((s) => {
   attachRelay(server);
   server.listen(PORT, () => {
     const ai = aiStatus();
-    console.log(`[ghostrace] env: ${loadedEnvFiles.join(', ') || 'none'}`);
-    console.log(`[ghostrace] listening on :${PORT}  store=${s.kind}  gemini=${ai.gemini}  elevenlabs=${ai.elevenlabs}  ws=/ws`);
+    console.log(`[buggyracer] env: ${loadedEnvFiles.join(', ') || 'none'}`);
+    console.log(`[buggyracer] listening on :${PORT}  store=${s.kind}  gemini=${ai.gemini}  elevenlabs=${ai.elevenlabs}  ws=/ws`);
   });
 });
 

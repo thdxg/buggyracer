@@ -12,8 +12,8 @@ import { escapeHtml } from './hud';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
-const PERSONA_KEY = 'ghostrace.persona';
-const VOICE_KEY = 'ghostrace.voice';
+const PERSONA_KEY = 'buggyracer.persona';
+const VOICE_KEY = 'buggyracer.voice';
 
 export interface PersonaChoice {
   persona: string;

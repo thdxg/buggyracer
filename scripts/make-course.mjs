@@ -53,7 +53,7 @@ outer: for (let attempt = 0; attempt < 3 && !elements; attempt++) {
       const res = await fetch(url, {
         method: 'POST',
         body: new URLSearchParams({ data: query }),
-        headers: { 'User-Agent': 'ghostrace-course-builder/1.0' },
+        headers: { 'User-Agent': 'buggyracer-course-builder/1.0' },
       });
       if (!res.ok) {
         failures.push(`${new URL(url).hostname} ${res.status}`);

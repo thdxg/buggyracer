@@ -73,13 +73,13 @@ const frameStamps: number[] = [];
 let debugVisible = false;
 let mode: 'hands' | 'keyboard' = 'hands';
 let appPhase: 'setup' | 'calibrating' | 'racing' | 'results' = 'setup';
-let playerName = localStorage.getItem('ghostrace.name') ?? '';
-let carColor = Number(localStorage.getItem('ghostrace.carColor') ?? '0');
-let carShape = Number(localStorage.getItem('ghostrace.carShape') ?? '1');
+let playerName = localStorage.getItem('buggyracer.name') ?? '';
+let carColor = Number(localStorage.getItem('buggyracer.carColor') ?? '0');
+let carShape = Number(localStorage.getItem('buggyracer.carShape') ?? '1');
 let spritesLoaded = 0;
-let sfxOn = localStorage.getItem('ghostrace.sfx') !== 'off';
+let sfxOn = localStorage.getItem('buggyracer.sfx') !== 'off';
 /** Webcam as a corner panel (default) or as the full-screen background. Toggle with V. */
-let videoPanel = localStorage.getItem('ghostrace.videoPanel') !== 'off';
+let videoPanel = localStorage.getItem('buggyracer.videoPanel') !== 'off';
 let lastCountdownPip = -1;
 
 const mp = new MultiplayerSession();
@@ -174,7 +174,7 @@ async function boot(): Promise<void> {
   // Dev-only handle for tuning and debugging from the console. Not present in a
   // production build.
   if (import.meta.env.DEV) {
-    (window as any).ghostrace = {
+    (window as any).buggyracer = {
       get race() { return race; },
       get tracker() { return tracker; },
       steering,
@@ -357,7 +357,7 @@ function buildCarPicker(): void {
     b.setAttribute('aria-pressed', String(i === carColor));
     b.addEventListener('click', () => {
       carColor = i;
-      localStorage.setItem('ghostrace.carColor', String(i));
+      localStorage.setItem('buggyracer.carColor', String(i));
       refreshCarPicker();
     });
     colors.appendChild(b);
@@ -370,7 +370,7 @@ function buildCarPicker(): void {
     b.setAttribute('aria-pressed', String(shape === carShape));
     b.addEventListener('click', () => {
       carShape = shape;
-      localStorage.setItem('ghostrace.carShape', String(shape));
+      localStorage.setItem('buggyracer.carShape', String(shape));
       refreshCarPicker();
     });
     shapes.appendChild(b);
@@ -404,7 +404,7 @@ function goToName(): void {
 const submitName = () => {
   const input = $<HTMLInputElement>('input-name');
   playerName = (input.value.trim() || 'Anon').slice(0, 16);
-  localStorage.setItem('ghostrace.name', playerName);
+  localStorage.setItem('buggyracer.name', playerName);
   screens.name.hidden = true;
   if (race) {
     (race as any).opts.playerName = playerName;
@@ -697,13 +697,13 @@ window.addEventListener('keydown', (e) => {
   if ((e.key === 'r' || e.key === 'R') && appPhase !== 'setup') restart();
   if (e.key === 'v' || e.key === 'V') {
     videoPanel = !videoPanel;
-    localStorage.setItem('ghostrace.videoPanel', videoPanel ? 'on' : 'off');
+    localStorage.setItem('buggyracer.videoPanel', videoPanel ? 'on' : 'off');
     applyVideoLayout();
   }
   if (e.key === 'm' || e.key === 'M') {
     sfxOn = !sfxOn;
     sfx.setEnabled(sfxOn);
-    localStorage.setItem('ghostrace.sfx', sfxOn ? 'on' : 'off');
+    localStorage.setItem('buggyracer.sfx', sfxOn ? 'on' : 'off');
   }
   if (e.key === 'k' || e.key === 'K') {
     mode = mode === 'hands' ? 'keyboard' : 'hands';

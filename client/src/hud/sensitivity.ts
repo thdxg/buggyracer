@@ -11,7 +11,7 @@ import { steerFeelFor, type SteerFeel } from '../game/physics';
  * The value is a 0..1 feel knob, not a turn rate. See steerFeelFor().
  */
 
-const KEY = 'ghostrace.sensitivity';
+const KEY = 'buggyracer.sensitivity';
 const DEFAULT = 0.5;
 
 /** Slider bands, coarsest first. Named so the number means something. */
